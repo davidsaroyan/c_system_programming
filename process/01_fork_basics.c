@@ -4,12 +4,17 @@
 int main(){
 	pid_t pid = fork();
 	if(pid == -1){
-		printf("Fork failed!\n");
+		perror("fork");
+		return 1;
 	}
 	else if(pid > 0){
-		int status = -1;
-		pid = wait(&status);
-		if(status == 0)
+		int status;
+		pid = waitpid(pid, &status, 0);
+		if(pid == -1){
+			perror("waitpid");
+			return 1;
+		}
+		if(WIFEXITED(status) && WEXITSTATUS(status) == 0)
 			printf("Succesful child process\n");
 		else
 			printf("Something bad with child status\n");
@@ -22,4 +27,5 @@ int main(){
 		printf("CHILLDS PID: %d\n", getpid());
 		printf("\n");
 	}
+	return 0;
 }
