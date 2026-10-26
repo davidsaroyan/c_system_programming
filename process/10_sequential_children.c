@@ -4,38 +4,32 @@
 #include <stdlib.h>
 int main()
 {
-    pid_t pid = fork();
-    if (pid == -1)
+    const char *cmds[] = {"ls", "pwd"};
+    const int count = sizeof cmds / sizeof cmds[0];
+
+    for (int i = 0; i < count; ++i)
     {
-        perror("Fork failed!\n");
-        return -1;
-    }
-    else if (pid > 0)
-    { // parent process
-        int status;
-        pid_t chpid = wait(&status);
-        printf("\n");
-        pid = fork();
+        pid_t pid = fork();
         if (pid == -1)
         {
-            perror("Fork failed!\n");
-            return -1;
+            perror("fork");
+            return 1;
         }
-        else if (pid > 0)
-        { // parent process
-            int status;
-            pid_t chpid = wait(&status);
-            printf("\n");
-        }
-        else
+        if (pid == 0)
         { // child process
-            char *cmd = "pwd";
-            system(cmd);
+            execlp(cmds[i], cmds[i], (char *)NULL);
+            perror(cmds[i]);
+            _exit(127);
         }
+
+        // parent: wait for this child before starting the next one
+        int status;
+        if (waitpid(pid, &status, 0) == -1)
+        {
+            perror("waitpid");
+            return 1;
+        }
+        printf("\n");
     }
-    else
-    { // child process
-        char *cmd = "ls";
-        system(cmd);
-    }
+    return 0;
 }
