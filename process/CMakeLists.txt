@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(ProcessExercises C)
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -g")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wshadow -g")
 
 # List of all process exercises
 set(PROCESS_EXERCISES
@@ -23,3 +23,6 @@ foreach(src ${PROCESS_EXERCISES})
     get_filename_component(exec_name ${src} NAME_WE)
     add_executable(${exec_name} ${src})
 endforeach()
+
+# log2, pow and tgamma live in the math library (libm)
+target_link_libraries(08_math_competition m)
