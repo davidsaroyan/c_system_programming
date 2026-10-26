@@ -1,29 +1,45 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
 
+#define N 3
+
 int main(){
-	pid_t pid [3]; 
-	pid[0] = fork();
-	for(int i = 0; i < 2; ++i){
-		if(pid[0] < 0){
-			printf("FORK FAILED\n");
+	pid_t pid[N];
+	for(int i = 0; i < N; ++i){
+		pid[i] = fork();
+		if(pid[i] < 0){
+			perror("fork");
+			for(int j = 0; j < i; ++j){
+				kill(pid[j], SIGTERM);
+				waitpid(pid[j], NULL, 0);
+			}
+			return 1;
 		}
-		else if(pid[i] > 0){
-			pid[i+1] = fork(); 
-		}
-	}
-	if(pid[0] != 0 && pid[1] != 0 && pid[2] !=0){
-		int status;
-		int ended_pid = wait(&status);
-		printf("1st finished PID: %d\nstatus: %d\n", ended_pid, status);
-		for(int i = 0; i < 3; ++i){
-			if(kill(pid[i], SIGTERM) == 0)
-				printf("Successfullly killed pid: %d\n", pid[i]);
+		if(pid[i] == 0){
+			sleep(N - i);   // different delays, so there is a real winner
+			_exit(i);
 		}
 	}
-	else{
-		sleep(2);
+
+	int status;
+	pid_t ended_pid = wait(&status);
+	if(ended_pid == -1){
+		perror("wait");
+		return 1;
 	}
+	if(WIFEXITED(status))
+		printf("1st finished PID: %d\nexit code: %d\n", ended_pid, WEXITSTATUS(status));
+
+	for(int i = 0; i < N; ++i){
+		if(pid[i] == ended_pid)
+			continue;   // already reaped: its PID may now belong to someone else
+		if(kill(pid[i], SIGTERM) == 0)
+			printf("Sent SIGTERM to pid: %d\n", pid[i]);
+		if(waitpid(pid[i], &status, 0) > 0 && WIFSIGNALED(status))
+			printf("pid %d terminated by signal %d\n", pid[i], WTERMSIG(status));
+	}
+	return 0;
 }
