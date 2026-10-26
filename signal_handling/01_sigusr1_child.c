@@ -4,17 +4,18 @@
 #include <unistd.h>
 #include <sys/wait.h>
 void handler(int signo){
+	(void)signo;
 	printf("[pid: %d] Just got signal SIGUSR1\n", getpid());
 	exit(0);
 }
 
 int main(){
+	signal(SIGUSR1, handler);
 	pid_t pid = fork();
 	if(pid < 0){
-		printf("FORK FAILED\n");
+		perror("fork");
+		return 1;
 	}else if(pid == 0){
-		printf("chld");
-		signal(SIGUSR1, handler);
 		pause();
 	}
 	else{
@@ -23,4 +24,5 @@ int main(){
 		int status;
 		wait(&status);
 	}
+	return 0;
 }
